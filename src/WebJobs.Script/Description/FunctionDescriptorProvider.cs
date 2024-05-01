@@ -12,17 +12,26 @@ using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Script.Binding;
 using Microsoft.Azure.WebJobs.Script.Extensibility;
 using Microsoft.Azure.WebJobs.Script.Extensions;
+using Microsoft.Azure.WebJobs.Script.Metrics;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Azure.WebJobs.Script.Description
 {
     public abstract class FunctionDescriptorProvider
     {
+        private readonly IHostMetrics _hostMetrics;
+
         protected FunctionDescriptorProvider(ScriptHost host, ScriptJobHostOptions config, ICollection<IScriptBindingProvider> bindingProviders)
         {
             Host = host;
             Config = config;
             BindingProviders = bindingProviders;
+
+            var serviceProvider = Host.ScriptHostManager as IServiceProvider;
+            if (serviceProvider is not null)
+            {
+                _hostMetrics = serviceProvider.GetService(typeof(IHostMetrics)) as IHostMetrics ?? throw new InvalidOperationException($"{nameof(IHostMetrics)} service is not registered.");
+            }
         }
 
         protected ScriptHost Host { get; private set; }
@@ -38,19 +47,20 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 throw new InvalidOperationException("functionMetadata");
             }
 
-            ValidateFunction(functionMetadata);
-
-            // parse the bindings
-            Collection<FunctionBinding> inputBindings = FunctionBinding.GetBindings(Config, BindingProviders, functionMetadata.InputBindings, FileAccess.Read);
-            Collection<FunctionBinding> outputBindings = FunctionBinding.GetBindings(Config, BindingProviders, functionMetadata.OutputBindings, FileAccess.Write);
-            VerifyResolvedBindings(functionMetadata, inputBindings, outputBindings);
-
-            BindingMetadata triggerMetadata = functionMetadata.InputBindings.FirstOrDefault(p => p.IsTrigger);
-            string scriptFilePath = Path.Combine(Config.RootScriptPath, functionMetadata.ScriptFile ?? string.Empty);
             IFunctionInvoker invoker = null;
 
             try
             {
+                ValidateFunction(functionMetadata);
+
+                // parse the bindings
+                Collection<FunctionBinding> inputBindings = FunctionBinding.GetBindings(Config, BindingProviders, functionMetadata.InputBindings, FileAccess.Read);
+                Collection<FunctionBinding> outputBindings = FunctionBinding.GetBindings(Config, BindingProviders, functionMetadata.OutputBindings, FileAccess.Write);
+                VerifyResolvedBindings(functionMetadata, inputBindings, outputBindings);
+
+                BindingMetadata triggerMetadata = functionMetadata.InputBindings.FirstOrDefault(p => p.IsTrigger);
+                string scriptFilePath = Path.Combine(Config.RootScriptPath, functionMetadata.ScriptFile ?? string.Empty);
+
                 invoker = CreateFunctionInvoker(scriptFilePath, triggerMetadata, functionMetadata, inputBindings, outputBindings);
 
                 Collection<CustomAttributeBuilder> methodAttributes = new Collection<CustomAttributeBuilder>();
@@ -62,6 +72,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
             catch (Exception ex)
             {
+                _hostMetrics?.AppFailure();
                 Host.Logger.LogDebug(ex, $"Creating function descriptor for function {functionMetadata.Name} failed");
                 IDisposable disposableInvoker = invoker as IDisposable;
                 if (disposableInvoker != null)

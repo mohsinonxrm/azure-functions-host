@@ -207,6 +207,8 @@ namespace Microsoft.Azure.WebJobs.Script
             }
         }
 
+        public IScriptHostManager ScriptHostManager => _scriptHostManager;
+
         /// <summary>
         /// Gets a value indicating whether the host is in debug mode.
         /// </summary>

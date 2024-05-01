@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Script.Description;
 using Microsoft.Azure.WebJobs.Script.Grpc.Messages;
+using Microsoft.Azure.WebJobs.Script.Metrics;
 using Microsoft.Azure.WebJobs.Script.Workers;
 using Microsoft.Azure.WebJobs.Script.Workers.Rpc;
 using Microsoft.Extensions.Logging;
@@ -165,11 +166,13 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             {
             });
 
+            var mockHostMetrics = new Mock<IHostMetrics>();
+
             var environment = SystemEnvironment.Instance;
             environment.SetEnvironmentVariable(EnvironmentSettingNames.FunctionWorkerRuntime, "node");
 
             var workerFunctionMetadataProvider = new WorkerFunctionMetadataProvider(optionsMonitor, logger, SystemEnvironment.Instance,
-                                                    mockWebHostRpcWorkerChannelManager.Object, mockScriptHostManager.Object);
+                                                    mockWebHostRpcWorkerChannelManager.Object, mockScriptHostManager.Object, mockHostMetrics.Object);
             await workerFunctionMetadataProvider.GetFunctionMetadataAsync(workerConfigs, false);
 
             var traces = logger.GetLogMessages();

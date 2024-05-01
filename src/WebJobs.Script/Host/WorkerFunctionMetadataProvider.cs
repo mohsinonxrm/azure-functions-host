@@ -10,6 +10,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Script.Description;
 using Microsoft.Azure.WebJobs.Script.Diagnostics.Extensions;
+using Microsoft.Azure.WebJobs.Script.Metrics;
 using Microsoft.Azure.WebJobs.Script.Workers.Rpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.WebJobs.Script
         private readonly IEnvironment _environment;
         private readonly IWebHostRpcWorkerChannelManager _channelManager;
         private readonly IScriptHostManager _scriptHostManager;
+        private readonly IHostMetrics _hostMetrics;
         private string _workerRuntime;
         private ImmutableArray<FunctionMetadata> _functions;
 
@@ -34,13 +36,15 @@ namespace Microsoft.Azure.WebJobs.Script
             ILogger<WorkerFunctionMetadataProvider> logger,
             IEnvironment environment,
             IWebHostRpcWorkerChannelManager webHostRpcWorkerChannelManager,
-            IScriptHostManager scriptHostManager)
+            IScriptHostManager scriptHostManager,
+            IHostMetrics hostMetrics)
         {
             _scriptOptions = scriptOptions;
             _logger = logger;
             _environment = environment;
             _channelManager = webHostRpcWorkerChannelManager;
             _scriptHostManager = scriptHostManager;
+            _hostMetrics = hostMetrics ?? throw new ArgumentNullException(nameof(hostMetrics));
             _workerRuntime = _environment.GetEnvironmentVariable(EnvironmentSettingNames.FunctionWorkerRuntime);
         }
 
@@ -238,6 +242,7 @@ namespace Microsoft.Azure.WebJobs.Script
                 }
                 catch (Exception ex)
                 {
+                    _hostMetrics.AppFailure();
                     Utility.AddFunctionError(_functionErrors, function.Name, Utility.FlattenException(ex, includeSource: false), isFunctionShortName: true);
                 }
             }
