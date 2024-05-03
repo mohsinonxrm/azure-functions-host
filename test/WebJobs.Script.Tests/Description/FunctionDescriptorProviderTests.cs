@@ -27,7 +27,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
         public FunctionDescriptorProviderTests()
         {
-            string rootPath = Path.Combine(Environment.CurrentDirectory, @"TestScripts\Node");
+            string rootPath = Path.Combine(Environment.CurrentDirectory, "TestScripts", "Node");
 
             _host = new HostBuilder()
                 .ConfigureDefaultTestWebScriptHost(webJobsBuilder =>

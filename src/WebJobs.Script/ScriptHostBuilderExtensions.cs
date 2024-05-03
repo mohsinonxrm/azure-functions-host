@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics.Tracing;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Azure.Identity;
@@ -103,6 +104,8 @@ namespace Microsoft.Azure.WebJobs.Script
             })
             .ConfigureAppConfiguration((context, configBuilder) =>
             {
+                Console.WriteLine($"LK:ScriptHostBuilderExtensions:CurrentDirectory: ${Environment.CurrentDirectory}");
+
                 if (!context.Properties.ContainsKey(ScriptConstants.SkipHostJsonConfigurationKey))
                 {
                     configBuilder.Add(new HostJsonFileConfigurationSource(applicationOptions, SystemEnvironment.Instance, loggerFactory, metricsLogger));

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host.Storage;
@@ -42,6 +43,7 @@ namespace Microsoft.WebJobs.Script.Tests
                 ScriptPath = TestHelpers.FunctionsTestDirectory,
                 LogPath = TestHelpers.GetHostLogFileDirectory().FullName
             };
+
             TestMetricsLogger metricsLogger = new TestMetricsLogger();
             configure?.Invoke(webHostOptions);
 

@@ -196,12 +196,15 @@ namespace Microsoft.Azure.WebJobs.Script.Configuration
 
             internal JObject LoadHostConfig(string configFilePath)
             {
+                LogConfigFilePath(configFilePath);
                 using (_metricsLogger.LatencyEvent(MetricEventNames.LoadHostConfiguration))
                 {
                     JObject hostConfigObject;
                     try
                     {
+                        Console.WriteLine("Reading host config file");
                         string json = FileUtility.Instance.File.ReadAllText(configFilePath);
+                        Console.WriteLine(json);
                         hostConfigObject = JObject.Parse(json);
                     }
                     catch (JsonException ex)
@@ -219,6 +222,7 @@ namespace Microsoft.Azure.WebJobs.Script.Configuration
                     }
                     catch (Exception ex) when (ex is FileNotFoundException || ex is DirectoryNotFoundException)
                     {
+                        Console.WriteLine("Host config file not found");
                         // if no file exists we default the config
                         _logger.HostConfigNotFound();
 
@@ -240,6 +244,31 @@ namespace Microsoft.Azure.WebJobs.Script.Configuration
                     }
 
                     return hostConfigObject;
+                }
+            }
+
+            public void LogConfigFilePath(string configFilePath)
+            {
+                if (File.Exists(configFilePath))
+                {
+                    _logger.LogInformation($"Config file exists at path: {configFilePath}");
+                    Console.WriteLine($"Config file exists at path: {configFilePath}");
+                }
+                else
+                {
+                    _logger.LogWarning($"Config file does not exist at path: {configFilePath}");
+                    Console.WriteLine($"Config file does not exist at path: {configFilePath}");
+
+                    var parentDirectory = Directory.GetParent(configFilePath);
+                    if (parentDirectory != null && Directory.Exists(parentDirectory.FullName))
+                    {
+                        Console.WriteLine($"Checking parent directory: {parentDirectory.FullName}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Parent directory does not exist for path: {configFilePath}");
+                        Console.WriteLine($"Parent directory does not exist for path: {configFilePath}");
+                    }
                 }
             }
 

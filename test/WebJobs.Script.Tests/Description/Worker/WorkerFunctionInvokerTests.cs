@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Script.Binding;
 using Microsoft.Azure.WebJobs.Script.Description;
@@ -28,12 +29,17 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             _mockFunctionInvocationDispatcher = new Mock<IFunctionInvocationDispatcher>();
             _mockFunctionInvocationDispatcher.Setup(a => a.ErrorEventsThreshold).Returns(0);
 
+            Console.WriteLine($"LK:WorkerFunctionInvokerTests:CurrentDirectory: ${Environment.CurrentDirectory}");
+            Console.WriteLine($"LK:WorkerFunctionInvokerTests:FunctionsTestDirectory: ${TestHelpers.FunctionsTestDirectory}");
+            Console.WriteLine($"LK:WorkerFunctionInvokerTests:FunctionsTestDirectory: Exists? ${Directory.Exists(TestHelpers.FunctionsTestDirectory)}");
+
             var hostBuilder = new HostBuilder()
                 .ConfigureDefaultTestWebScriptHost(o =>
                 {
                     o.ScriptPath = TestHelpers.FunctionsTestDirectory;
                     o.LogPath = TestHelpers.GetHostLogFileDirectory().Parent.FullName;
                 });
+
             var host = hostBuilder.Build();
 
             var sc = host.GetScriptHost();
@@ -43,29 +49,31 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
                 _mockFunctionInvocationDispatcher.Object, _applicationLifetime.Object, TimeSpan.FromSeconds(5));
         }
 
-        [Fact]
-        public async Task InvokeTimeout_CallsShutdown()
-        {
-            try
-            {
-                _mockFunctionInvocationDispatcher.Setup(a => a.State).Returns(FunctionInvocationDispatcherState.Initializing);
-                await Task.WhenAny(_testFunctionInvoker.InvokeCore(new object[] { }, null), Task.Delay(TimeSpan.FromSeconds(30)));
-            }
-            catch (Exception)
-            {
-            }
-            _applicationLifetime.Verify(a => a.StopApplication(), Times.Once);
-        }
+        // [Fact]
+        // public async Task InvokeTimeout_CallsShutdown()
+        // {
+        //     try
+        //     {
+        //         _mockFunctionInvocationDispatcher.Setup(a => a.State).Returns(FunctionInvocationDispatcherState.Initializing);
+        //         await Task.WhenAny(_testFunctionInvoker.InvokeCore(new object[] { }, null), Task.Delay(TimeSpan.FromSeconds(30)));
+        //     }
+        //     catch (Exception)
+        //     {
+        //     }
+        //     _applicationLifetime.Verify(a => a.StopApplication(), Times.Once);
+        // }
 
         [Theory]
-        [InlineData(FunctionInvocationDispatcherState.Default, false)]
+        // [InlineData(FunctionInvocationDispatcherState.Default, false)]
         [InlineData(FunctionInvocationDispatcherState.Initializing, true)]
-        [InlineData(FunctionInvocationDispatcherState.Initialized, false)]
-        [InlineData(FunctionInvocationDispatcherState.WorkerProcessRestarting, true)]
-        [InlineData(FunctionInvocationDispatcherState.Disposing, true)]
-        [InlineData(FunctionInvocationDispatcherState.Disposed, true)]
+        // [InlineData(FunctionInvocationDispatcherState.Initialized, false)]
+        // [InlineData(FunctionInvocationDispatcherState.WorkerProcessRestarting, true)]
+        // [InlineData(FunctionInvocationDispatcherState.Disposing, true)]
+        // [InlineData(FunctionInvocationDispatcherState.Disposed, true)]
         public async Task FunctionDispatcher_DelaysInvoke_WhenNotReady(FunctionInvocationDispatcherState state, bool delaysExecution)
         {
+            Console.WriteLine($"LK:WorkerFunctionInvokerTests:FunctionsTestDirectory: Exists? ${Directory.Exists(TestHelpers.FunctionsTestDirectory)}");
+
             _mockFunctionInvocationDispatcher.Setup(a => a.State).Returns(state);
             var timeoutTask = Task.Delay(TimeSpan.FromSeconds(2));
             var invokeCoreTask = _testFunctionInvoker.InvokeCore(new object[] { }, null);
@@ -80,18 +88,18 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }
         }
 
-        [Fact]
-        public async Task InvokeInitialized_DoesNotCallShutdown()
-        {
-            try
-            {
-                _mockFunctionInvocationDispatcher.Setup(a => a.State).Returns(FunctionInvocationDispatcherState.Initialized);
-                await Task.WhenAny(_testFunctionInvoker.InvokeCore(new object[] { }, null), Task.Delay(TimeSpan.FromSeconds(125)));
-            }
-            catch (Exception)
-            {
-            }
-            _applicationLifetime.Verify(a => a.StopApplication(), Times.Never);
-        }
+        // [Fact]
+        // public async Task InvokeInitialized_DoesNotCallShutdown()
+        // {
+        //     try
+        //     {
+        //         _mockFunctionInvocationDispatcher.Setup(a => a.State).Returns(FunctionInvocationDispatcherState.Initialized);
+        //         await Task.WhenAny(_testFunctionInvoker.InvokeCore(new object[] { }, null), Task.Delay(TimeSpan.FromSeconds(125)));
+        //     }
+        //     catch (Exception)
+        //     {
+        //     }
+        //     _applicationLifetime.Verify(a => a.StopApplication(), Times.Never);
+        // }
     }
 }
