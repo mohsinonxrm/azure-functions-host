@@ -11,3 +11,4 @@
   - Added support for Identity-based connections
 - Skip validation of `FUNCTIONS_WORKER_RUNTIME` with funciton metadata in placeholder mode. (#10459)
 - Sanitize exception logs (#10443)
+- Added support for Identity-based connections to Diagnostic Events (#10438)
